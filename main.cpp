@@ -132,7 +132,25 @@ int main(int argc, char **argv)
                     std::cout << "<no " << print_frame.second.second << ">\n";
                 }
                 else {
-                    std::cout << search->second << std::endl;
+                    std::string prefix;
+                    for (auto arg_iter (search->second.begin()); arg_iter != search->second.end(); ++arg_iter) {
+                        std::string suffix;
+                        if (*arg_iter == '(' || *arg_iter == '[') {
+                            prefix.push_back(' ');
+                            suffix = "\n " + prefix;
+                        }
+                        else if (*arg_iter == ',' && prefix.size() > 0) {
+                            suffix = "\n" + prefix;
+                        }
+                        else if (*arg_iter == ')' || *arg_iter == ']') {
+                            if (prefix.size() > 0) {
+                                prefix.erase(prefix.begin());
+                            }
+                            suffix = "\n" + prefix;
+                        }
+                        std::cout << *arg_iter << suffix;
+                    }
+                    std::cout << std::endl;
                 }
                 level = test_level;
                 break;
