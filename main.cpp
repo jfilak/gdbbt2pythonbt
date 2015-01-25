@@ -47,9 +47,7 @@ int main(int argc, char **argv)
             auto start(line.begin());
             auto end(start);
 
-            while (*end != ' ' && end != line.end()) {
-                ++end;
-            }
+            end = std::find_if(end, line.end(), [](char c) { return c == ' ';});
 
             if (end == start || end == line.end()) {
                 std::cerr << "Failed to found end of frame ID\n";
@@ -59,9 +57,7 @@ int main(int argc, char **argv)
             frame f;
             f.id.assign(start, end);
 
-            while (*end == ' ' && end != line.end()) {
-                ++end;
-            }
+            end = std::find_if_not(end, line.end(), [](char c) { return c == ' ';});
 
             if (end == line.end()) {
                 std::cerr << "Frame misses function name\n";
@@ -70,13 +66,8 @@ int main(int argc, char **argv)
 
             start = end++;
             if (*start == '0' && end != line.end() && *end == 'x') {
-                while (*end != ' ' && end != line.end()) {
-                    ++end;
-                }
-
-                while (*end == ' ' && end != line.end()) {
-                    ++end;
-                }
+                end = std::find_if(end, line.end(), [](char c) { return c == ' ';});
+                end = std::find_if_not(end, line.end(), [](char c) { return c == ' ';});
 
                 if (   *end != 'i' || ++end == line.end()
                     || *end != 'n' || ++end == line.end()
@@ -88,9 +79,7 @@ int main(int argc, char **argv)
                 start = end++;
             }
 
-            while (*end != ' ' && end != line.end()) {
-                ++end;
-            }
+            end = std::find_if(end, line.end(), [](char c) { return c == ' ';});
 
             f.name.assign(start, end);
 
@@ -107,20 +96,15 @@ int main(int argc, char **argv)
             }
 
             auto end(line.begin());
-            while (*end == ' ' && end != line.end()) {
-                ++end ;
-            }
+            end = std::find_if_not(end, line.end(), [](char c) { return c == ' ';});
 
             auto start(end++);
-
-            while (*end != ' ' && end != line.end()) {
-                ++end ;
-            }
+            end = std::find_if(end, line.end(), [](char c) { return c == ' ';});
 
             if (   *end != ' ' || ++end == line.end()
                 || *end != '=' || ++end == line.end()
                 || *end != ' ' || ++end == line.end()) {
-                std::cerr << "Argument misses =\n" << line << std::endl;
+                std::cerr << "Argument misses =\n'" << line << "'\n";
                 continue;
             }
 
@@ -130,30 +114,26 @@ int main(int argc, char **argv)
         }
     }
 
-    bool reached_python = false;
+    std::vector<std::pair<std::string, std::pair<std::string, std::string> > > frame_order {
+        {"import_submodule",  { "buf", "import submodule"} },
+        {"PyEval_EvalCodeEx", { "f" , "python frame" } }
+    };
+
+    unsigned level { 0 };
     for (auto iter(frames.begin()); iter != frames.end(); ++iter) {
-        if (!reached_python) {
-            if (iter->name == "import_submodule") {
+        for (unsigned test_level { level }; test_level < frame_order.size(); ++test_level) {
+            auto &print_frame(frame_order.at(test_level));
+            if (iter->name == print_frame.first) {
                 std::cout << iter->id << " " << iter->name << " => ";
-                auto search(iter->arguments.find("buf"));
+                auto search(iter->arguments.find(print_frame.second.first));
                 if (search == iter->arguments.end()) {
-                    std::cout << "<no imported module>\n";
+                    std::cout << "<no " << print_frame.second.second << ">\n";
                 }
                 else {
                     std::cout << search->second << std::endl;
                 }
-            }
-        }
-
-        if (iter->name == "PyEval_EvalCodeEx") {
-            reached_python = true;
-            std::cout << iter->id << " " << iter->name << " => ";
-            auto search(iter->arguments.find("f"));
-            if (search == iter->arguments.end()) {
-                std::cout << "<no python frame>\n";
-            }
-            else {
-                std::cout << search->second << std::endl;
+                level = test_level;
+                break;
             }
         }
     }
