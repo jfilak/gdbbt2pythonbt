@@ -86,8 +86,10 @@ int main(int argc, char **argv)
             frames.push_back(f);
             current = &(frames[frames.size() - 1]);
         }
-        else if (   std::equal(NOSYMBOL.begin(), NOSYMBOL.end(), line.begin())
-                 || std::equal(FROM.begin(), FROM.end(), line.begin())) {
+        else if (std::equal(NOSYMBOL.begin(), NOSYMBOL.end(), line.begin())) {
+            continue;
+        }
+        else if (std::equal(FROM.begin(), FROM.end(), line.begin())) {
             break;
         }
         else if (current) {
