@@ -44,7 +44,7 @@ int main(int argc, char **argv)
     }
 
     for (std::string line; std::getline(infs, line); ) {
-        if (line.size() > 0 && line[0] == '#') {
+        if (line.size() > 0 && *line.begin() == '#') {
             auto start(line.begin());
             auto end(start);
 
@@ -162,7 +162,7 @@ int main(int argc, char **argv)
             if (   *end != ' ' || ++end == line.end()
                 || *end != '=' || ++end == line.end()
                 || *end != ' ' || ++end == line.end()) {
-                std::cerr << "Argument misses =\n'" << line << "'\n";
+                std::cerr << "Frame " << current->name << ": an argument misses =\n'" << line << "'\n";
                 continue;
             }
 
