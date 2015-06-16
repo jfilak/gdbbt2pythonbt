@@ -149,6 +149,7 @@ int main(int argc, char **argv)
         }
         else if (current) {
             if (std::equal(NOLOCALS.begin(), NOLOCALS.end(), line.begin())) {
+                current = NULL;
                 continue;
             }
 
