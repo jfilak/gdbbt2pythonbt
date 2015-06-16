@@ -172,8 +172,9 @@ int main(int argc, char **argv)
     }
 
     std::vector<std::pair<std::string, std::pair<std::string, std::string> > > frame_order {
-        {"import_submodule",  { "buf", "import submodule"} },
-        {"PyEval_EvalCodeEx", { "f" , "python frame" } }
+        {"import_submodule",   { "buf", "import submodule"} },
+        {"PyEval_EvalFrameEx", { "f" , "python frame" } },
+        {"PyEval_EvalCodeEx",  { "f" , "python frame" } }
     };
 
     unsigned level { 0 };
