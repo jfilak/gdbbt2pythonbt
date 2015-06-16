@@ -20,6 +20,7 @@ const std::string THREAD("Thread");
 const std::string NOSYMBOL("No symbol table info available.");
 const std::string FROM("From");
 const std::string NOLOCALS("No locals");
+const std::string TRUNCATED("(truncated)");
 
 int main(int argc, char **argv)
 {
@@ -85,6 +86,60 @@ int main(int argc, char **argv)
 
             frames.push_back(f);
             current = &(frames[frames.size() - 1]);
+
+            /* Parse the frame's arguments
+             *
+             * frame (arg1=text (.*...(truncated), arg2=arg2@entry=text 2 (.*))
+             */
+            start = std::find_if(end, line.end(), [](char c) { return c == '(';});
+            if (start == line.end()) {
+                std::cerr << "Frame has not open brace\n";
+                continue;
+            }
+            end = ++start;
+            while (*end != ')' && end != line.end()) {
+                end = std::find_if(start, line.end(), [](char c) { return c == '=';});
+                std::string arg_name(start, end);
+                std::string kw_entry("=" + arg_name + "@entry");
+                unsigned long line_size = static_cast<unsigned long>(std::distance(end, line.end()));
+                if (static_cast<unsigned long>(kw_entry.size()) < line_size) {
+                    if (std::equal(kw_entry.begin(), kw_entry.end(), end)) {
+                        end += kw_entry.size();
+                    }
+                }
+
+                start = ++end;
+                if (start == line.end()) {
+                    std::cerr << "Frame's argument " << arg_name << " does not have value\n";
+                    break;
+                }
+
+                unsigned brackets = 0;
+                bool body = false;
+                unsigned not_truncated = 1;
+                while (++end != line.end()) {
+                    if (*end == '(') {
+                        body = true;
+                        if (std::equal(TRUNCATED.begin(), TRUNCATED.end(), end)) {
+                            brackets = 0;
+                            not_truncated = 0;
+                            end += TRUNCATED.size() - 1;
+                        }
+                        ++brackets;
+                    }
+                    if (*end == ')') {
+                        if (brackets == 0) {
+                            break;
+                        }
+                        --brackets;
+                    }
+                    if (body && brackets == 0 && *end == ',') {
+                        break;
+                    }
+                }
+                current->arguments.insert(std::make_pair(arg_name, std::string(start, end - (not_truncated))));
+                start = end + 1;
+            }
         }
         else if (std::equal(NOSYMBOL.begin(), NOSYMBOL.end(), line.begin())) {
             continue;
